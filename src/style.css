@@ -1,0 +1,87 @@
+:root {
+    --sidebar-width: 300px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100vw;
+    height: 100vh;
+    user-select: none;
+    display: flex;
+    background-color: #fff;
+    font-family: sans-serif;
+    font-size: 14px;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+    background-color: #eee;
+}
+
+.resizer {
+    width: 20px;
+    top: 0;
+    right: 0px;
+    cursor: col-resize;
+    height: 100vh;
+    position: absolute;
+}
+
+.header {
+    padding: 10px 10px;
+    background-color: #eee;
+    width: calc(100vw - var(--sidebar-width));
+}
+
+.sidebar a {
+    display: block;
+    color: black;
+    padding: 10px;
+    text-decoration: none;
+}
+
+.sidebar div.status {
+    display: block;
+    color: #000;
+    text-decoration: none;
+    padding: 10px;
+}
+
+.sidebar a.active {
+    background-color: #666;
+    color: #fff;
+}
+
+.sidebar a.important {
+    border-left: 10px solid #f55;
+}
+
+.sidebar a:hover:not(.active) {
+    background-color: #ccc;
+    color: #000;
+}
+
+.sidebar a {
+    text-align: left;
+    float: none;
+}
+
+.editor {
+    flex-grow: 1;
+    padding: 5px;
+    width: calc(100vw - var(--sidebar-width));
+}
+
+div#infos {
+    float: right;
+    color: #666;
+}

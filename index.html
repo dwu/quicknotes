@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuickNotes</title>
+</head>
+
+<body>
+  <div class="sidebar">
+    <div class="resizer"></div>
+    <div class="status">
+      <button id="btnnew">New</button>
+      <input id="newname" type="text" size="20">
+    </div>
+    <div class="notelist">
+    </div>
+  </div>
+  <div class="content">
+    <div class="header">
+      <input id="name" type="text" size="50">
+      <button id="btnsave">Save</button>
+      <button id="btndel">Delete</button>
+      <button id="btnimportant">Important</button>
+      <span id="status"></span>
+      <div id="infos">
+        <span id="size"></span> | <span id="version">v1.0</span>
+      </div>
+    </div>
+    <div class="editor"></div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
