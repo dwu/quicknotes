@@ -53,10 +53,14 @@ class NoteIndex {
     }
 
     deleteCurrentNote(): boolean {
-        localStorage.removeItem(KEY_PREFIX_NOTE + this.currentNote!.info!.id)
-        this.infos.delete(this.currentNote!.info!.id)
-        this.save()
-        return this.selectFirstNote()
+        if (confirm(`Delete note "${this.currentNote!.info!.name}?"`)) {
+            localStorage.removeItem(KEY_PREFIX_NOTE + this.currentNote!.info!.id)
+            this.infos.delete(this.currentNote!.info!.id)
+            this.save()
+            return this.selectFirstNote()
+        } else {
+            return true
+        }
     }
 
     toggleCurrentNoteImportant() {
