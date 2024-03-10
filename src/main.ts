@@ -72,6 +72,10 @@ function newNote() {
 }
 
 function saveNote() {
+    if (typeof noteIndex.currentNote == 'undefined') {
+        return
+    }
+
     noteIndex.currentNote!.content = editorView.state.doc.toString()
     noteIndex.currentNote!.save()
 
@@ -89,6 +93,10 @@ function saveNote() {
 }
 
 function deleteNote() {
+    if (typeof noteIndex.currentNote == 'undefined') {
+        return
+    }
+
     const hasNotes = noteIndex.deleteCurrentNote()
     if (!hasNotes) {
         inputName.value = "";
@@ -99,6 +107,10 @@ function deleteNote() {
 }
 
 function toggleImportant() {
+    if (typeof noteIndex.currentNote == 'undefined') {
+        return
+    }
+
     noteIndex.toggleCurrentNoteImportant()
     refreshNoteIndex()
     editorView.focus()
@@ -131,8 +143,10 @@ function refreshNoteIndex() {
         noteList.appendChild(note)
     }
 
-    inputName.value = noteIndex.currentNote!.info!.name;
-    highlightOnly(noteIndex.currentNote!)
+    if (typeof noteIndex.currentNote != 'undefined') {
+        inputName.value = noteIndex.currentNote!.info!.name;
+        highlightOnly(noteIndex.currentNote!)
+    }
 }
 
 function highlightOnly(note: Note) {
