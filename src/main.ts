@@ -4,7 +4,7 @@ import { basicSetup, EditorView } from "codemirror"
 import { EditorState, EditorSelection } from "@codemirror/state"
 import { keymap } from "@codemirror/view"
 import { indentWithTab } from "@codemirror/commands"
-import { Note, NoteIndex } from "./note";
+import { Note, NoteRepository } from "./note";
 import { initResizerFn } from "./resizer";
 
 const editor = document.querySelector(".editor")!
@@ -36,7 +36,13 @@ const editorExtensions = [
     keymap.of([
         {
             key: "Ctrl-s", preventDefault: true, run: () => {
-                saveNote()
+                saveCurrentNote()
+                return true
+            },
+        },
+        {
+            key: "Ctrl-m", preventDefault: true, run: () => {
+                toggleCurrentNoteImportant()
                 return true
             },
         },
@@ -52,37 +58,35 @@ const editorView = new EditorView({
 })
 
 btnNew.addEventListener("click", () => newNote())
-btnSave.addEventListener("click", () => saveNote())
-btnDel.addEventListener("click", () => deleteNote())
-btnImportant.addEventListener("click", () => toggleImportant())
-
-// save on browser window losing focus
-window.addEventListener("blur", () => saveNote())
+btnSave.addEventListener("click", () => saveCurrentNote())
+btnDel.addEventListener("click", () => deleteCurrentNote())
+btnImportant.addEventListener("click", () => toggleCurrentNoteImportant())
 
 function newNote() {
+    saveCurrentNote()
+
     const newNoteName = inputNewName.value.trim()
     inputNewName.value = "";
     if (newNoteName.length > 0) {
-        noteIndex.addNote(Note.newWithName(newNoteName))
+        noteRepository.addNote(Note.newWithName(newNoteName))
     } else {
-        noteIndex.addNote(Note.newWithName(new Date().toISOString()))
+        noteRepository.addNote(Note.newWithName(new Date().toISOString()))
     }
     refreshEditor()
     refreshNoteIndex()
 }
 
-function saveNote() {
-    if (typeof noteIndex.currentNote == 'undefined') {
+function saveCurrentNote() {
+    if (typeof noteRepository.currentNote == 'undefined') {
         return
     }
 
-    noteIndex.currentNote!.content = editorView.state.doc.toString()
-    noteIndex.currentNote!.save()
+    noteRepository.currentNote!.content = editorView.state.doc.toString()
 
-    if (inputName.value.trim() != noteIndex.currentNote!.info!.name) {
-        noteIndex.saveCurrentNote(inputName.value.trim())
+    if (inputName.value.trim() != noteRepository.currentNote!.name) {
+        noteRepository.saveCurrentNote(inputName.value.trim())
     } else {
-        noteIndex.saveCurrentNote()
+        noteRepository.saveCurrentNote()
     }
 
     editorDirty = false
@@ -92,12 +96,12 @@ function saveNote() {
     refreshSize()
 }
 
-function deleteNote() {
-    if (typeof noteIndex.currentNote == 'undefined') {
+function deleteCurrentNote() {
+    if (typeof noteRepository.currentNote == 'undefined') {
         return
     }
 
-    const hasNotes = noteIndex.deleteCurrentNote()
+    const hasNotes = noteRepository.deleteCurrentNote()
     if (!hasNotes) {
         inputName.value = "";
     }
@@ -106,19 +110,19 @@ function deleteNote() {
     refreshNoteIndex()
 }
 
-function toggleImportant() {
-    if (typeof noteIndex.currentNote == 'undefined') {
+function toggleCurrentNoteImportant() {
+    if (typeof noteRepository.currentNote == 'undefined') {
         return
     }
 
-    noteIndex.toggleCurrentNoteImportant()
+    noteRepository.toggleCurrentNoteImportant()
     refreshNoteIndex()
     editorView.focus()
 }
 
 function refreshNoteIndex() {
     noteList.innerHTML = "";
-    for (let info of noteIndex.sortedNoteList()) {
+    for (let info of noteRepository.sortedNoteInfoList()) {
         const note = document.createElement("a")
 
         note.setAttribute("href", "#note-" + info.id)
@@ -130,12 +134,12 @@ function refreshNoteIndex() {
 
         note.addEventListener("click", (ev: MouseEvent) => {
             // save current note before switching notes
-            saveNote()
+            saveCurrentNote()
 
             // display target note content and update views
             const target = (ev.target as HTMLElement)
             const noteid = target.getAttribute("href")!.replace("#note-", "")
-            noteIndex.currentNote = Note.loadById(noteid)
+            noteRepository.currentId = noteid
 
             refreshEditor()
             refreshNoteIndex()
@@ -143,9 +147,9 @@ function refreshNoteIndex() {
         noteList.appendChild(note)
     }
 
-    if (typeof noteIndex.currentNote != 'undefined') {
-        inputName.value = noteIndex.currentNote!.info!.name;
-        highlightOnly(noteIndex.currentNote!)
+    if (typeof noteRepository.currentNote != 'undefined') {
+        inputName.value = noteRepository.currentNote!.name;
+        highlightOnly(noteRepository.currentNote!)
     }
 }
 
@@ -155,7 +159,7 @@ function highlightOnly(note: Note) {
 
     const noteLinks = document.querySelectorAll("div.notelist > a")
     noteLinks.forEach((el) => {
-        if (el.getAttribute("href") == "#note-" + note.info!.id) {
+        if (el.getAttribute("href") == "#note-" + note.id) {
             el.classList.add("active")
         } else {
             el.classList.remove("active")
@@ -164,12 +168,12 @@ function highlightOnly(note: Note) {
 }
 
 function refreshEditor() {
-    if (typeof noteIndex.currentNote != 'undefined') {
+    if (typeof noteRepository.currentNote != 'undefined') {
         // there's a current note, show its content in the editor
-        inputName.setAttribute("value", noteIndex.currentNote!.info!.name)
+        inputName.setAttribute("value", noteRepository.currentNote!.name)
         let newState = EditorState.create({
             extensions: editorExtensions,
-            doc: noteIndex.currentNote!.content,
+            doc: noteRepository.currentNote!.content,
             selection: EditorSelection.cursor(0),
         });
         editorView.setState(newState)
@@ -206,8 +210,8 @@ initResizerFn(resizer, sidebar, header)
 
 let editorDirty = false;
 
-const noteIndex = new NoteIndex()
-const hasNotes = noteIndex.init()
+const noteRepository = new NoteRepository()
+const hasNotes = noteRepository.init()
 if (hasNotes) {
     refreshEditor()
 } else {

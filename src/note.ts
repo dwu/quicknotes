@@ -1,144 +1,27 @@
 import { v4 as uuidv4 } from "uuid"
 
-const KEY_NOTEINDEX = "noteindex"
 const KEY_PREFIX_NOTE = "note:"
 
-class NoteInfo {
+class Note {
     id: string
     name: string
-    important: boolean
-
-    constructor(id: string, name: string, important: boolean) {
-        this.id = id
-        this.name = name
-        this.important = important
-    }
-}
-
-class NoteIndex {
-    currentNote: Note | undefined
-    infos: Map<string, NoteInfo>
-
-    constructor() {
-        this.infos = new Map<string, NoteInfo>()
-    }
-
-    recover() {
-        this.infos.clear()
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i)!
-            if (key.split(":")[0] == "note") {
-                const note = Note.loadById(localStorage.getItem(key)!)
-                this.infos.set(note.info!.id, new NoteInfo(note.info!.id, note.info!.name, note.info!.important))
-            }
-        }
-    }
-
-    addNote(note: Note) {
-        this.currentNote = note
-        note.save()
-        this.infos.set(note.info!.id, note.info!)
-        this.save()
-    }
-
-    saveCurrentNote(newname?: string) {
-        if (typeof newname != 'undefined' && newname != this.currentNote!.info!.name!) {
-            this.currentNote!.info!.name = newname
-            const info = this.infos.get(this.currentNote!.info!.id!)
-            info!.name = newname!
-            this.infos.set(info!.id, info!)
-            this.save()
-        }
-        this.currentNote!.save()
-    }
-
-    deleteCurrentNote(): boolean {
-        if (confirm(`Delete note "${this.currentNote!.info!.name}?"`)) {
-            localStorage.removeItem(KEY_PREFIX_NOTE + this.currentNote!.info!.id)
-            this.infos.delete(this.currentNote!.info!.id)
-            this.save()
-            return this.selectFirstNote()
-        } else {
-            return true
-        }
-    }
-
-    toggleCurrentNoteImportant() {
-        this.currentNote!.info!.important = !this.currentNote!.info!.important
-        this.currentNote!.save()
-
-        const info = this.infos.get(this.currentNote!.info!.id!)
-        info!.important = !info!.important
-        this.infos.set(info!.id, info!)
-        this.save()
-    }
-
-    selectFirstNote(): boolean {
-        // if there are notes, then select the first note
-        if (this.infos.size > 0) {
-            this.currentNote = Note.loadById(this.sortedNoteList()[0].id)
-            return true;
-        } else {
-            this.currentNote = undefined
-            return false;
-        }
-    }
-
-    private stateFrom(s: string) {
-        this.infos = new Map(Object.entries(JSON.parse(s)))
-    }
-
-    private serialize(): string {
-        return JSON.stringify(Object.fromEntries(this.infos))
-    }
-
-    sortedNoteList(): NoteInfo[] {
-        const sortedIds = Array.from<[string, NoteInfo]>(this.infos.entries()).sort(function (a, b) { return a[1].name.localeCompare(b[1].name) })
-        return sortedIds.map((id) => this.infos.get(id[0])) as NoteInfo[];
-    }
-
-    init(): boolean {
-        const val = localStorage.getItem(KEY_NOTEINDEX)
-        if (val == null) {
-            // initialize empty index
-            this.save()
-        } else {
-            this.stateFrom(val)
-        }
-
-        return this.selectFirstNote()
-    }
-
-    save() {
-        localStorage.setItem(KEY_NOTEINDEX, this.serialize())
-    }
-}
-
-class Note {
-    info: NoteInfo | undefined
     content: string
     important: boolean
 
     constructor() {
-        this.info = undefined
+        this.id = ""
+        this.name = ""
         this.content = ""
         this.important = false
     }
 
     static newWithName(name: string): Note {
         const note = new Note()
-        note.info = new NoteInfo(uuidv4(), name, false)
+        note.id = uuidv4()
+        note.name = name
+        note.important = false
+        note.content = ""
         note.save()
-
-        return note
-    }
-
-    static deserialize(s: string): Note {
-        const val = JSON.parse(s)
-
-        const note = new Note()
-        note.info = new NoteInfo(val.info.id, val.info.name, val.info.important)
-        note.content = val.content
 
         return note
     }
@@ -147,17 +30,123 @@ class Note {
         return this.deserialize(localStorage.getItem(KEY_PREFIX_NOTE + id)!)
     }
 
-    serialize(): string {
+    static deserialize(s: string): Note {
+        const val = JSON.parse(s)
+
+        const note = new Note()
+        note.id = val.id
+        note.name = val.name
+        note.important = val.important
+        note.content = val.content
+
+        return note
+    }
+
+    private serialize(): string {
         return JSON.stringify({
-            "info": this.info,
+            "id": this.id,
+            "name": this.name,
+            "important": this.important,
             "content": this.content
         })
     }
 
     save() {
-        localStorage.setItem(KEY_PREFIX_NOTE + this.info!.id, this.serialize())
+        localStorage.setItem(KEY_PREFIX_NOTE + this.id, this.serialize())
     }
 }
 
+class NoteRepository {
+    _currentId: string | undefined
+    _currentNote: Note | undefined
 
-export { Note, NoteInfo, NoteIndex };
+    set currentId(id: string | undefined) {
+        this._currentId = id
+        if (typeof this._currentId != 'undefined') {
+            this._currentNote = Note.loadById(this._currentId)
+        }
+    }
+
+    get currentNote(): Note | undefined {
+        if (typeof this._currentId == 'undefined') {
+            return undefined
+        }
+
+        return this._currentNote
+    }
+
+    addNote(note: Note) {
+        note.save()
+        this.currentId = note.id
+    }
+
+    saveCurrentNote(newname?: string) {
+        if (typeof this._currentId == 'undefined') {
+            return undefined
+        }
+
+        if (typeof newname != 'undefined' && newname != this.currentNote!.name!) {
+            this.currentNote!.name = newname
+        }
+        this.currentNote!.save()
+    }
+
+    deleteCurrentNote(): boolean {
+        if (typeof this._currentId == 'undefined') {
+            return true
+        }
+
+        if (confirm(`Delete note "${this.currentNote!.name}?"`)) {
+            localStorage.removeItem(KEY_PREFIX_NOTE + this._currentId)
+            return this.selectFirstNote()
+        } else {
+            return true
+        }
+    }
+
+    toggleCurrentNoteImportant() {
+        this.currentNote!.important = !this.currentNote!.important
+        this.currentNote!.save()
+    }
+
+    sortedNoteInfoList(): any[] {
+        const entries: any[][] = []
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const noteAsString = localStorage.getItem(key!) as string
+            const note = Note.deserialize(noteAsString)
+            entries.push([note.id, note.name, note.important])
+        }
+
+        const sortedEntries = entries.sort(function (a, b) { return a[1].localeCompare(b[1]) })
+        return sortedEntries.map((entry) => {
+            return {
+                "id": entry[0],
+                "name": entry[1],
+                "important": entry[2],
+            }
+        });
+    }
+
+    sortedNoteIdList(): string[] {
+        return this.sortedNoteInfoList().map((entry) => entry.id as string)
+    }
+
+    selectFirstNote(): boolean {
+        // if there are notes, then select the first note
+        const noteIds = this.sortedNoteIdList()
+        if (noteIds.length > 0) {
+            this.currentId = noteIds[0]
+            return true;
+        } else {
+            this.currentId = undefined;
+            return false;
+        }
+    }
+
+    init(): boolean {
+        return this.selectFirstNote()
+    }
+}
+
+export { Note, NoteRepository };
