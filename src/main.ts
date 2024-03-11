@@ -1,11 +1,13 @@
 import "./style.css"
 
-import { basicSetup, EditorView } from "codemirror"
-import { EditorState, EditorSelection } from "@codemirror/state"
-import { keymap } from "@codemirror/view"
 import { indentWithTab } from "@codemirror/commands"
-import { Note, NoteRepository } from "./note";
-import { initResizerFn } from "./resizer";
+import { EditorSelection, EditorState } from "@codemirror/state"
+import { keymap } from "@codemirror/view"
+import { EditorView, basicSetup } from "codemirror"
+import { css, json, sql, xml } from "vkbeautify"
+import { compactBlanks, epochConvert, htmlDecode, htmlEncode, insertBlanksAfterNCharacters, removeBackslashes, removeBlanks, removeLinebreaks, trimLines } from "./filter"
+import { Note, NoteRepository } from "./note"
+import { initResizerFn } from "./resizer"
 
 const editor = document.querySelector(".editor")!
 const resizer = document.querySelector<HTMLElement>(".resizer")!
@@ -20,6 +22,8 @@ const btnSave = document.querySelector<HTMLElement>("#btnsave")!
 const btnNew = document.querySelector<HTMLElement>("#btnnew")!
 const btnDel = document.querySelector<HTMLElement>("#btndel")!
 const btnImportant = document.querySelector<HTMLElement>("#btnimportant")!
+const btnFilter = document.querySelector<HTMLInputElement>("#btnfilter")!
+const selFilter = document.querySelector<HTMLInputElement>("#selfilter")!
 
 let updateListenerExtension = EditorView.updateListener.of((update) => {
     if (editorDirty) {
@@ -56,11 +60,6 @@ const editorView = new EditorView({
     extensions: editorExtensions,
     parent: editor,
 })
-
-btnNew.addEventListener("click", () => newNote())
-btnSave.addEventListener("click", () => saveCurrentNote())
-btnDel.addEventListener("click", () => deleteCurrentNote())
-btnImportant.addEventListener("click", () => toggleCurrentNoteImportant())
 
 function newNote() {
     saveCurrentNote()
@@ -205,6 +204,88 @@ function calculateTotalLocalStorageUsage(): string {
     let inKB = (total / 1024);
     return inKB.toFixed(2);
 }
+
+function applyFilter() {
+    const selectedText = editorView.state.sliceDoc(
+        editorView.state.selection.main.from,
+        editorView.state.selection.main.to)
+
+    if (editorView.state.selection.ranges.length != 1) {
+        return
+    }
+    const selectionStart = editorView.state.selection.ranges[0].from
+    let replacement: string = "";
+    switch (selFilter.value) {
+        case "base64encode":
+            replacement = btoa(selectedText)
+            break
+        case "base64decode":
+            replacement = atob(selectedText)
+            break
+        case "urlencode":
+            replacement = encodeURI(selectedText)
+            break
+        case "urldecode":
+            replacement = decodeURI(selectedText)
+            break
+        case "htmlencode":
+            replacement = htmlEncode(selectedText)
+            break
+        case "htmldecode":
+            replacement = htmlDecode(selectedText)
+            break
+        case "jsonformat":
+            replacement = json(selectedText, 2)
+            break
+        case "xmlformat":
+            replacement = xml(selectedText, 2)
+            break
+        case "cssformat":
+            replacement = css(selectedText, 2)
+            break
+        case "sqlformat":
+            replacement = sql(selectedText, 2)
+            break
+        case "epoch":
+            replacement = epochConvert(selectedText)
+            break
+        case "removelinebreaks":
+            replacement = removeLinebreaks(selectedText)
+            break
+        case "trimlines":
+            replacement = trimLines(selectedText)
+            break
+        case "removeblanks":
+            replacement = removeBlanks(selectedText)
+            break
+        case "compactblanks":
+            replacement = compactBlanks(selectedText)
+            break
+        case "removebackslashes":
+            replacement = removeBackslashes(selectedText)
+            break
+        case "insertblanks2":
+            replacement = insertBlanksAfterNCharacters(selectedText, 2)
+            break
+        case "insertblanks4":
+            replacement = insertBlanksAfterNCharacters(selectedText, 4)
+            break
+        case "insertblanks8":
+            replacement = insertBlanksAfterNCharacters(selectedText, 8)
+            break
+    }
+    editorView.dispatch(editorView.state.replaceSelection(replacement))
+    const selectionEnd = selectionStart + replacement.length
+    editorView.dispatch({
+        selection: EditorSelection.create([EditorSelection.range(selectionStart, selectionEnd)])
+    })
+}
+
+btnNew.addEventListener("click", () => newNote())
+btnSave.addEventListener("click", () => saveCurrentNote())
+btnDel.addEventListener("click", () => deleteCurrentNote())
+btnImportant.addEventListener("click", () => toggleCurrentNoteImportant())
+btnFilter.addEventListener("click", () => applyFilter())
 
 initResizerFn(resizer, sidebar, header)
 

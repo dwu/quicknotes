@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "@types/uuid": "^9.0.8",
+    "@types/vkbeautify": "^0.99.4",
     "codemirror": "^6.0.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "vkbeautify": "^0.99.3"
   }
 }

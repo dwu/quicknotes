@@ -15,6 +15,34 @@
     <div class="status">
       <button id="btnnew">New</button>
       <input id="newname" type="text" size="20">
+      <div class="filter">
+        <select id="selfilter">
+          <option>----</option>
+          <option value="base64encode">Base64 encode</option>
+          <option value="base64decode">Base64 decode</option>
+          <option value="urlencode">URL encode</option>
+          <option value="urldecode">URL decode</option>
+          <option value="htmlencode">HTML encode</option>
+          <option value="htmldecode">HTML decode</option>
+          <option>----</option>
+          <option value="jsonformat">JSON format</option>
+          <option value="xmlformat">XML format</option>
+          <option value="cssformat">CSS format</option>
+          <option value="sqlformat">SQL format</option>
+          <option>----</option>
+          <option value="removelinebreaks">Remove line breaks</option>
+          <option value="trimlines">Trim lines</option>
+          <option value="removeblanks">Remove blanks</option>
+          <option value="compactblanks">Compact blanks</option>
+          <option value="removebackslashes">Remove backslashes</option>
+          <option value="insertblanks2">Insert blanks every 2 chars</option>
+          <option value="insertblanks4">Insert blanks every 4 chars</option>
+          <option value="insertblanks8">Insert blanks every 8 chars</option>
+          <option>----</option>
+          <option value="epoch">Epoch to Local</option>
+        </select>
+        <button id="btnfilter">Filter</button>
+      </div>
     </div>
     <div class="notelist">
     </div>

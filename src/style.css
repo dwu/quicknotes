@@ -85,3 +85,7 @@ div#infos {
     float: right;
     color: #666;
 }
+
+.filter {
+    padding-top: 10px;
+}
